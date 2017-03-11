@@ -1,4 +1,6 @@
 *
 
 !.gitignore
+!LICENCE.md
+!README.md
 !Main.cpp
