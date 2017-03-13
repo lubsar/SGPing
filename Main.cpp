@@ -36,7 +36,10 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 
 static void update_ball(double deltaTime);
 static void update_platform(rectangle* p, float platform_velocity, float* platform_matrix, double deltaTime);
-static bool collides_rectangle(rectangle* p);
+
+static bool collides_edge(rectangle *r);
+static bool out_of_area(rectangle* p);
+static bool collides_rectangle(rectangle *r1, rectangle *r2);
 
 GLFWwindow* setup(int*width, int*height);
 
@@ -212,13 +215,27 @@ int main() {
 
 //ball movement
 static void update_ball(double deltaTime) {
-	ball.y += (float) (deltaTime * ball_velocity_y);
-	if ((ball.y+ ball.h_height >= 1) || (ball.y - ball.h_height) <= -1) {
+	//vertical movement
+	float step = (float) (deltaTime * ball_velocity_y);
+	
+	ball.y += step;
+
+	if (collides_rectangle(&ball, &platform_1) || collides_rectangle(&ball, &platform_2)){
+		ball.y -= step;
+		if (step > 0) {
+			ball.y = platform_1.y - (platform_1.h_height + ball.h_width);
+		}
+		else if (step < 0) {
+			ball.y = platform_2.y + (platform_2.h_height + ball.h_width);
+		}
+
 		ball_velocity_y = -ball_velocity_y;
 	}
-	float step = (float) (deltaTime * ball_velocity_x);
+
+	//horizontal movement
+	step = (float) (deltaTime * ball_velocity_x);
 	ball.x += step;
-	if (collides_rectangle(&ball)) {
+	if (collides_edge(&ball)) {
 		ball.x -= step;
 		if (step > 0) {
 			ball.x = 1.0f - ball.h_width;
@@ -234,6 +251,42 @@ static void update_ball(double deltaTime) {
 	ball_matrix[12] = ball.x;
 }
 
+static bool out_of_area(rectangle *r){
+	if ((r->y + r->h_height >= 1) || (r->y - r->h_height) <= -1) {
+		return true;
+	}
+
+	return false;
+}
+
+static bool collides_rectangle(rectangle *r1, rectangle *r2) {
+	
+	/*
+	//rectangle 1
+	float x1 = r1->x - r1->h_width;
+	float y1 = r1->y + r1->h_height;
+
+	float x2 = r1->x + r1->h_width;
+	float y2 = r1->y - r1->h_height;
+
+	//rectangle 2
+	float x3 = r2->x - r2->h_width;
+	float y3 = r2->y + r2->h_height;
+
+	float x4 = r2->x + r2->h_width;
+	float y4 = r2->y - r2->h_height;
+
+	if (x3 < x2 &&
+		x4 > x1 &&
+		y3 < y2 &&
+		y4 > y1) {
+		std::cout << true << std::endl;
+		return true;
+	}
+	*/
+	return false;
+}
+
 //platform movement
 static void update_platform(rectangle* p, float platform_velocity, float* platform_matrix, double deltaTime) {
 	if (platform_velocity != 0) {
@@ -241,7 +294,7 @@ static void update_platform(rectangle* p, float platform_velocity, float* platfo
 		//adds movement
 		p->x += step;
 		//if collides
-		if (collides_rectangle(p)) {
+		if (collides_edge(p)) {
 			//moves back
 			p->x -= step;
 			//adjusts position of platform
@@ -259,7 +312,7 @@ static void update_platform(rectangle* p, float platform_velocity, float* platfo
 }
 
 //checks if collision box collides with an edge of playing field
-static bool collides_rectangle(rectangle* p) {
+static bool collides_edge(rectangle* p) {
 	if ((p->x + p->h_width >= 1) || (p->x - p->h_width) <= -1) {
 		return true;
 	} else {
