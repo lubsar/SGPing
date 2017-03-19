@@ -41,6 +41,9 @@ static bool collides_edge(rectangle *r);
 static bool out_of_area(rectangle* p);
 static bool collides_rectangle(rectangle *r1, rectangle *r2);
 
+static float toWindowCoords(float x);
+static float toOpenglCoords(float x, bool hor);
+
 GLFWwindow* setup(int*width, int*height);
 
 //rectangle vertex data
@@ -97,16 +100,16 @@ static const GLchar* fragment_shader_text =
 
 
 //ball data
-rectangle  ball = {0.0f, 0.0f, 0.05f, 0.03f};
+rectangle  ball = {1.0f, 1.0f, 0.05f, 0.03f};
 
 float ball_velocity_x = 0.05f;
-float ball_velocity_y = 0.02f;
+float ball_velocity_y = -0.02f;
 
 const float ball_speed = 0.01f;
 
 //platforms
-rectangle  platform_1 = {0.0f, 0.97f, 0.15f, 0.03f};
-rectangle  platform_2 = {0.0f, 0.97f, 0.15f, 0.03f};
+rectangle  platform_b = {1.0f, 1.97f, 0.15f, 0.03f};
+rectangle  platform_t = {1.0f, 0.03f, 0.15f, 0.03f};
 
 const float platform_speed = 0.05f;
 
@@ -186,8 +189,8 @@ int main() {
 		
 		while (deltaTime >= 1.0) {
 			//update
-			update_platform(&platform_1, platform1_velocity, platform_b_matrix, deltaTime);
-			update_platform(&platform_2, platform2_velocity, platform_t_matrix, deltaTime);
+			update_platform(&platform_b, platform1_velocity, platform_b_matrix, deltaTime);
+			update_platform(&platform_t, platform2_velocity, platform_t_matrix, deltaTime);
 			update_ball(deltaTime);
 
 			deltaTime--;
@@ -218,18 +221,24 @@ static void update_ball(double deltaTime) {
 	//vertical movement
 	float step = (float) (deltaTime * ball_velocity_y);
 	
-	ball.y += step;
-
-	if (collides_rectangle(&ball, &platform_1) || collides_rectangle(&ball, &platform_2)){
-		ball.y -= step;
-		if (step > 0) {
-			ball.y = platform_1.y - (platform_1.h_height + ball.h_width);
-		}
-		else if (step < 0) {
-			ball.y = platform_2.y + (platform_2.h_height + ball.h_width);
-		}
+	ball.y -= step;
+	
+	if (collides_rectangle(&ball, &platform_b)) {
+		ball.y += step;
+		
+		ball.y = platform_b.y - (platform_b.h_height + ball.h_height);
 
 		ball_velocity_y = -ball_velocity_y;
+	} else if (collides_rectangle(&ball, &platform_t)){
+		ball.y += step;
+		
+		ball.y = platform_t.y + (platform_t.h_height + ball.h_height);
+
+		ball_velocity_y = -ball_velocity_y;
+	}
+
+	if (out_of_area(&ball)) {
+		ball.y = 1.0f;
 	}
 
 	//horizontal movement
@@ -238,21 +247,21 @@ static void update_ball(double deltaTime) {
 	if (collides_edge(&ball)) {
 		ball.x -= step;
 		if (step > 0) {
-			ball.x = 1.0f - ball.h_width;
+			ball.x = 2.0f - ball.h_width;
 		}
 		else if (step < 0) {
-			ball.x = -1.0f + ball.h_width;
+			ball.x = ball.h_width;
 		}
 
 		ball_velocity_x = -ball_velocity_x;
 	}
 
-	ball_matrix[13] = ball.y;
-	ball_matrix[12] = ball.x;
+	ball_matrix[13] = toOpenglCoords(ball.y, false);
+	ball_matrix[12] = toOpenglCoords(ball.x, true);
 }
 
 static bool out_of_area(rectangle *r){
-	if ((r->y + r->h_height >= 1) || (r->y - r->h_height) <= -1) {
+	if ((r->y + r->h_height >= 2) || (r->y - r->h_height) <= 0) {
 		return true;
 	}
 
@@ -260,30 +269,28 @@ static bool out_of_area(rectangle *r){
 }
 
 static bool collides_rectangle(rectangle *r1, rectangle *r2) {
-	
-	/*
 	//rectangle 1
-	float x1 = r1->x - r1->h_width;
-	float y1 = r1->y + r1->h_height;
+	float xl1 = r1->x - r1->h_width;
+	float yt1 = r1->y - r1->h_height;
 
-	float x2 = r1->x + r1->h_width;
-	float y2 = r1->y - r1->h_height;
+	float xr1 = r1->x + r1->h_width;
+	float yb1 = r1->y + r1->h_height;
 
 	//rectangle 2
-	float x3 = r2->x - r2->h_width;
-	float y3 = r2->y + r2->h_height;
+	float xl2 = r2->x - r2->h_width;
+	float yt2 = r2->y - r2->h_height;
 
-	float x4 = r2->x + r2->h_width;
-	float y4 = r2->y - r2->h_height;
+	float xr2 = r2->x + r2->h_width;
+	float yb2 = r2->y + r2->h_height;
 
-	if (x3 < x2 &&
-		x4 > x1 &&
-		y3 < y2 &&
-		y4 > y1) {
-		std::cout << true << std::endl;
+	if (xl1 < xr2 &&
+		xr1 > xl2 &&
+		yt1 < yb2 &&
+		yb1 > yt2) {
+
 		return true;
 	}
-	*/
+
 	return false;
 }
 
@@ -299,25 +306,36 @@ static void update_platform(rectangle* p, float platform_velocity, float* platfo
 			p->x -= step;
 			//adjusts position of platform
 			if (step > 0) {
-				p->x = 1.0f - p->h_width;
+				p->x = 2.0f - p->h_width;
 			}
 			else if (step < 0){
-				p->x = -1.0f + p->h_width;
+				p->x = p->h_width;
 			}
 		}
 
 		//updates platform matrix (render)
-		platform_matrix[12] = p->x;
+		platform_matrix[12] = toOpenglCoords(p->x, true);
 	}
 }
 
 //checks if collision box collides with an edge of playing field
 static bool collides_edge(rectangle* p) {
-	if ((p->x + p->h_width >= 1) || (p->x - p->h_width) <= -1) {
+	if ((p->x + p->h_width >= 2) || (p->x - p->h_width) <= 0) {
 		return true;
 	} else {
 		return false;
 	}
+}
+
+static float toWindowCoords(float x) {
+	return x + 1;
+}
+
+static float toOpenglCoords(float x, bool hor) {
+	if (hor)
+		return x - 1;
+	else
+		return -x + 1;
 }
 
 GLFWwindow* setup(int*width, int*height) {
@@ -377,13 +395,13 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 		platform1_velocity = 0.0f;
 
 	//control of the top platform
-	if (key == GLFW_KEY_A && action == GLFW_PRESS)
+	if (key == GLFW_KEY_UP && action == GLFW_PRESS)
 		platform2_velocity = -platform_speed;
-	if (key == GLFW_KEY_A && action == GLFW_RELEASE)
+	if (key == GLFW_KEY_UP && action == GLFW_RELEASE)
 		platform2_velocity = 0.0f;
 
-	if (key == GLFW_KEY_D && action == GLFW_PRESS)
+	if (key == GLFW_KEY_DOWN && action == GLFW_PRESS)
 		platform2_velocity = platform_speed;
-	if (key == GLFW_KEY_D && action == GLFW_RELEASE)
+	if (key == GLFW_KEY_DOWN && action == GLFW_RELEASE)
 		platform2_velocity = 0.0f;
 }
