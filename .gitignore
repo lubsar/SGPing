@@ -1,6 +1,4 @@
-*
-
-!.gitignore
-!LICENCE.md
-!README.md
-!Main.cpp
+/Pong.vcxproj
+/Pong.vcxproj.filters
+/Pong.vcxproj.user
+/Debug
