@@ -19,7 +19,7 @@ namespace sgping {
 		if (collides_rectangle(&collision_box, &(Game::bottom.collision_box))) {
 			collision_box.y += step;
 
-			collision_box.y = Game::bottom.collision_box.y + (Game::bottom.collision_box.h_height + collision_box.h_height);
+			collision_box.y = Game::bottom.collision_box.y - (Game::bottom.collision_box.h_height + collision_box.h_height);
 
 			velocity_y = -velocity_y;
 			daw = true;
@@ -27,7 +27,7 @@ namespace sgping {
 		else if (collides_rectangle(&collision_box, &Game::top.collision_box)) {
 			collision_box.y += step;
 
-			collision_box.y = Game::top.collision_box.y - (Game::top.collision_box.h_height + collision_box.h_height);
+			collision_box.y = Game::top.collision_box.y + (Game::top.collision_box.h_height + collision_box.h_height);
 
 			velocity_y = -velocity_y;
 			daw = true;

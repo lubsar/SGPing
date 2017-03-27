@@ -27,6 +27,7 @@ SOFTWARE.
 #include "Physics.h"
 #include "Game.h"
 #include "Graphics.h"
+#include "Perceptron.h"
 
 namespace sgping {
 	static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
@@ -53,8 +54,8 @@ namespace sgping {
 		0.0f, 0.0f, 0.0f, 1.0f
 	};
 
-	Platform Game::top = Platform(platform_b_matrix, { 1.0f, 1.97f, 0.15f, 0.03f });
-	Platform Game::bottom = Platform(platform_t_matrix, { 1.0f, 0.03f, 0.15f, 0.03f });
+	Platform Game::bottom = Platform(platform_b_matrix, { 1.0f, 1.97f, 0.15f, 0.03f });
+	Platform Game::top = Platform(platform_t_matrix, { 1.0f, 0.03f, 0.15f, 0.03f });
 	Ball Game::ball = Ball(ball_matrix, { 1.0f, 1.0f, 0.05f, 0.03f });
 
 	float ball_speed_h = 0.0005f;
@@ -95,53 +96,85 @@ namespace sgping {
 }
 
 using namespace sgping;
-	int main() {
-		set_game_up();
+using namespace sgann;
 
-		int width = 500;
-		int height = 700;
+void update_perceptrons(Perceptron *r, Perceptron *l);
 
-		GLFWwindow *window = setup(&width, &height);
-		glfwSetKeyCallback(window, key_callback);
+int main() {
+	set_game_up();
 
-		if (!window) {
-			return EXIT_FAILURE;
+	Perceptron l = Perceptron();
+	Perceptron r = Perceptron();
+
+	l.add_input(&(Game::ball.collision_box.x), 1);
+	l.add_input(&(Game::bottom.collision_box.x), -1);
+
+	r.add_input(&(Game::ball.collision_box.x), -1);
+	r.add_input(&(Game::bottom.collision_box.x), 1);
+
+	int width = 500;
+	int height = 700;
+
+	GLFWwindow *window = setup(&width, &height);
+	glfwSetKeyCallback(window, key_callback);
+
+	if (!window) {
+		return EXIT_FAILURE;
+	}
+
+	//game loop
+	double lastTime = glfwGetTime();
+	double deltaTime = 0.0;
+	double nowTime = 0.0;
+
+	double fpsTime = 1.0 / 600.0;
+
+	while (!glfwWindowShouldClose(window)) {
+		nowTime = glfwGetTime();
+		deltaTime = (nowTime - lastTime) / fpsTime;
+		lastTime = nowTime;
+
+		while (deltaTime >= 1.0) {
+			//update
+			Game::bottom.update(deltaTime);
+			Game::top.update(deltaTime);
+
+			Game::ball.update(deltaTime);
+			update_perceptrons(&r, &l);
+
+			deltaTime-= 1;
 		}
 
-		//game loop
-		double lastTime = glfwGetTime();
-		double deltaTime = 0.0;
-		double nowTime = 0.0;
+		//rendering
+		clear();
 
-		double fpsTime = 1.0 / 600.0;
+		render_rectangle(Game::bottom.matrix);
+		render_rectangle(Game::top.matrix);
+		render_rectangle(Game::ball.matrix);
 
-		while (!glfwWindowShouldClose(window)) {
-			nowTime = glfwGetTime();
-			deltaTime = (nowTime - lastTime) / fpsTime;
-			lastTime = nowTime;
+		display();
+	}
 
-			while (deltaTime >= 1.0) {
-				//update
-				Game::bottom.update(deltaTime);
-				Game::top.update(deltaTime);
+	glfwDestroyWindow(window);
+	glfwTerminate();
 
-				Game::ball.update(deltaTime);
-			
-				deltaTime-= 1;
-			}
+	return EXIT_SUCCESS;
+}
 
-			//rendering
-			clear();
+void update_perceptrons(Perceptron *r, Perceptron *l) {
+	if (r->calculate()) {
+		Game::bottom.setVelocity(platform_speed);
+		return;
+	}
+	else {
+		Game::bottom.setVelocity(0.0f);
+	}
 
-			render_rectangle(Game::bottom.matrix);
-			render_rectangle(Game::top.matrix);
-			render_rectangle(Game::ball.matrix);
-
-			display();
-		}
-
-		glfwDestroyWindow(window);
-		glfwTerminate();
-
-		return EXIT_SUCCESS;
+	if (l->calculate()) {
+		Game::bottom.setVelocity(-platform_speed);
+		return;
+	}
+	else {
+		Game::bottom.setVelocity(0.0f);
+	}
 }
