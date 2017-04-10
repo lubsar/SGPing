@@ -58,9 +58,9 @@ namespace sgping {
 	Platform Game::top = Platform(platform_t_matrix, { 1.0f, 0.03f, 0.15f, 0.03f });
 	Ball Game::ball = Ball(ball_matrix, { 1.0f, 1.0f, 0.05f, 0.03f });
 
-	float ball_speed_h = 0.0005f;
-	float ball_speed_v = -0.0002f;
-	const float platform_speed = 0.0005f;
+	float ball_speed_h = 1.0f/60.0f;
+	float ball_speed_v = -1.0f/60.0f;
+	const float platform_speed = 2.0f/60.0f;
 
 	void set_game_up() {
 		Game::ball.velocity_x = ball_speed_h;
@@ -106,11 +106,11 @@ int main() {
 	Perceptron l = Perceptron();
 	Perceptron r = Perceptron();
 
-	l.add_input(&(Game::ball.collision_box.x), 1);
-	l.add_input(&(Game::bottom.collision_box.x), -1);
+	l.add_input(&(Game::ball.collision_box.x), -1);
+	l.add_input(&(Game::bottom.collision_box.x), 1);
 
-	r.add_input(&(Game::ball.collision_box.x), -1);
-	r.add_input(&(Game::bottom.collision_box.x), 1);
+	r.add_input(&(Game::ball.collision_box.x), 1);
+	r.add_input(&(Game::bottom.collision_box.x), -1);
 
 	int width = 500;
 	int height = 700;
@@ -124,25 +124,33 @@ int main() {
 
 	//game loop
 	double lastTime = glfwGetTime();
-	double deltaTime = 0.0;
-	double nowTime = 0.0;
+	double delta = 0.0;
+	
+	double updateTime = 1.0 / 60.0;
+	double outT = lastTime;
 
-	double fpsTime = 1.0 / 600.0;
+	unsigned int tps = 0,fps = 0;
 
 	while (!glfwWindowShouldClose(window)) {
-		nowTime = glfwGetTime();
-		deltaTime = (nowTime - lastTime) / fpsTime;
-		lastTime = nowTime;
+		delta += (glfwGetTime() - lastTime);
+		fps++;
 
-		while (deltaTime >= 1.0) {
+		while (delta >= updateTime) {
 			//update
-			Game::bottom.update(deltaTime);
-			Game::top.update(deltaTime);
+			Game::bottom.update();
+			Game::top.update();
 
-			Game::ball.update(deltaTime);
+			Game::ball.update();
 			update_perceptrons(&r, &l);
+			delta -= updateTime;
+			tps++;
+		}
 
-			deltaTime-= 1;
+		if (glfwGetTime() - outT >= 1.0)  {
+			std::cout << "tps: " <<tps << " delta: " << (glfwGetTime() - outT) / fps * 1000  << "ms fps: " << fps << std::endl;
+			tps = 0;
+			outT = glfwGetTime();
+			fps = 0;
 		}
 
 		//rendering
@@ -151,7 +159,8 @@ int main() {
 		render_rectangle(Game::bottom.matrix);
 		render_rectangle(Game::top.matrix);
 		render_rectangle(Game::ball.matrix);
-
+	
+		lastTime = glfwGetTime();
 		display();
 	}
 

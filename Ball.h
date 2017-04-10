@@ -13,7 +13,7 @@ namespace sgping {
 			GLfloat *matrix;
 
 			Ball(GLfloat*, rectangle);
-			void update(double deltaTime);
+			void update();
 	};
 }
 #endif 

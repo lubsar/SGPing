@@ -19,8 +19,6 @@ namespace sgann {
 			sum += *inputs[i] * weights[i];
 		}
 
-		cout << sum << endl;
-
 		return sum + bias > 0;
 	}
 }

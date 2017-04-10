@@ -9,15 +9,14 @@ namespace sgping {
 		this->collision_box = collision_box;
 	}
 
-	void Ball::update(double deltaTime) {
+	void Ball::update() {
 		//vertical movement
-		float step = (float)(deltaTime * velocity_y);
 		bool daw = false;
 
-		collision_box.y -= step;
+		collision_box.y -= velocity_y;
 
 		if (collides_rectangle(&collision_box, &(Game::bottom.collision_box))) {
-			collision_box.y += step;
+			collision_box.y += velocity_y;
 
 			collision_box.y = Game::bottom.collision_box.y - (Game::bottom.collision_box.h_height + collision_box.h_height);
 
@@ -25,7 +24,7 @@ namespace sgping {
 			daw = true;
 		}
 		else if (collides_rectangle(&collision_box, &Game::top.collision_box)) {
-			collision_box.y += step;
+			collision_box.y += velocity_y;
 
 			collision_box.y = Game::top.collision_box.y + (Game::top.collision_box.h_height + collision_box.h_height);
 
@@ -38,14 +37,13 @@ namespace sgping {
 		}
 
 		//horizontal movement
-		step = (float)(deltaTime * velocity_x);
-		collision_box.x += step;
+		collision_box.x += velocity_x;
 		if (collides_edge(&collision_box)) {
-			collision_box.x -= step;
-			if (step > 0) {
+			collision_box.x -= velocity_x;
+			if (velocity_x > 0) {
 				collision_box.x = physics_width - collision_box.h_width;
 			}
-			else if (step < 0) {
+			else if (velocity_x < 0) {
 				collision_box.x = collision_box.h_width;
 			}
 

@@ -20,7 +20,7 @@ namespace sgping {
 
 		//sets version of Opengl
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 
 		//creates glfw window
 		GLFWwindow *window = glfwCreateWindow(*width, *height, "Opengl example", NULL, NULL);

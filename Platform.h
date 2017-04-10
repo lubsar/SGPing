@@ -16,7 +16,7 @@ namespace sgping {
 
 	public: 
 		Platform(GLfloat *, rectangle );
-		void update(double);
+		void update();
 
 		void setVelocity(float velocity) {
 			this->velocity = velocity;
