@@ -27,7 +27,6 @@ SOFTWARE.
 #include "Physics.h"
 #include "Game.h"
 #include "Graphics.h"
-#include "Perceptron.h"
 
 namespace sgping {
 	static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
@@ -96,21 +95,9 @@ namespace sgping {
 }
 
 using namespace sgping;
-using namespace sgann;
-
-void update_perceptrons(Perceptron *r, Perceptron *l);
 
 int main() {
 	set_game_up();
-
-	Perceptron l = Perceptron();
-	Perceptron r = Perceptron();
-
-	l.add_input(&(Game::ball.collision_box.x), -1);
-	l.add_input(&(Game::bottom.collision_box.x), 1);
-
-	r.add_input(&(Game::ball.collision_box.x), 1);
-	r.add_input(&(Game::bottom.collision_box.x), -1);
 
 	int width = 500;
 	int height = 700;
@@ -141,7 +128,6 @@ int main() {
 			Game::top.update();
 
 			Game::ball.update();
-			update_perceptrons(&r, &l);
 			delta -= updateTime;
 			tps++;
 		}
@@ -168,22 +154,4 @@ int main() {
 	glfwTerminate();
 
 	return EXIT_SUCCESS;
-}
-
-void update_perceptrons(Perceptron *r, Perceptron *l) {
-	if (r->calculate()) {
-		Game::bottom.setVelocity(platform_speed);
-		return;
-	}
-	else {
-		Game::bottom.setVelocity(0.0f);
-	}
-
-	if (l->calculate()) {
-		Game::bottom.setVelocity(-platform_speed);
-		return;
-	}
-	else {
-		Game::bottom.setVelocity(0.0f);
-	}
 }
